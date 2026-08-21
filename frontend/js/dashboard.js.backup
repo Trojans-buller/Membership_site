@@ -1,0 +1,646 @@
+// Dashboard JavaScript
+console.log('Dashboard loaded!');
+
+let allMembers = [];
+let currentUser = '';
+let posts = [];
+let comments = {};
+let messages = {};
+let selectedMember = null;
+let currentPostId = null;
+let earnings = { replies: 0, views: 0, likes: 0, contentViews: 0, shares: 0 };
+let notifications = [];
+let notifCount = 0;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM loaded');
+    const userId = localStorage.getItem('userId');
+    const isPaid = localStorage.getItem('isPaid');
+    const username = localStorage.getItem('username');
+    currentUser = username || 'Member';
+    
+    console.log('User:', { userId, isPaid, username });
+    
+    if (!userId) {
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    if (isPaid !== 'true') {
+        window.location.href = 'payment.html';
+        return;
+    }
+    
+    await loadMembers();
+    loadPosts();
+    loadEarnings();
+    updateOnlineCount();
+    startEarningSimulation();
+    showToast('👋 Welcome back, ' + currentUser + '!');
+});
+
+async function loadMembers() {
+    try {
+        console.log('Loading members...');
+        const response = await fetch('/api/members');
+        const data = await response.json();
+        console.log('Members data:', data);
+        
+        if (data.users) {
+            allMembers = data.users.filter(u => u.username !== currentUser);
+            displayMembers(allMembers);
+            
+            const online = Math.floor(Math.random() * Math.min(allMembers.length, 15)) + 1;
+            document.getElementById('onlineCount').textContent = `🟢 ${online} online`;
+        }
+    } catch (error) {
+        console.error('Error loading members:', error);
+        document.getElementById('membersList').innerHTML = `
+            <div class="member-item error">
+                <p>❌ Could not load members</p>
+            </div>
+        `;
+    }
+}
+
+function displayMembers(members) {
+    const container = document.getElementById('membersList');
+    
+    if (!members || members.length === 0) {
+        container.innerHTML = `
+            <div class="member-item">
+                <p style="color:#999;text-align:center;padding:20px;">No other members</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = members.map(member => `
+        <div class="member-item">
+            <div class="member-avatar">
+                <span class="avatar-letter">${member.full_name ? member.full_name.charAt(0).toUpperCase() : '?'}</span>
+                <span class="status-dot ${member.is_paid ? 'online' : 'offline'}"></span>
+            </div>
+            <div class="member-info">
+                <div class="member-name">${member.full_name}</div>
+                <div class="member-username">@${member.username}</div>
+            </div>
+            <div class="member-actions">
+                <button onclick="openMessageModal(${member.id})" class="message-btn" title="Send Message">💬</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function searchMembers() {
+    const searchTerm = document.getElementById('searchMembers').value.toLowerCase();
+    const filtered = allMembers.filter(member => 
+        member.full_name.toLowerCase().includes(searchTerm) ||
+        member.username.toLowerCase().includes(searchTerm)
+    );
+    displayMembers(filtered);
+}
+
+function submitPost() {
+    const content = document.getElementById('postContentInput').value.trim();
+    if (!content) {
+        showToast('❌ Please write something!');
+        return;
+    }
+    
+    const post = {
+        id: Date.now(),
+        author: currentUser,
+        content: content,
+        timestamp: new Date().toLocaleString(),
+        likes: 0,
+        comments_count: 0,
+        liked: false,
+        shared: false,
+        views: 0
+    };
+    
+    posts.unshift(post);
+    document.getElementById('postContentInput').value = '';
+    displayPosts();
+    savePosts();
+    addEarnings('contentViews', 0.50);
+    addNotification('📝 You created a new post! +KSH 0.50');
+    showToast('✅ Post shared successfully!');
+}
+
+function loadPosts() {
+    const saved = localStorage.getItem('social_posts');
+    if (saved) {
+        try {
+            posts = JSON.parse(saved);
+        } catch (e) {
+            posts = [];
+        }
+    } else {
+        posts = [];
+    }
+    
+    const savedComments = localStorage.getItem('social_comments');
+    if (savedComments) {
+        try {
+            comments = JSON.parse(savedComments);
+        } catch (e) {
+            comments = {};
+        }
+    }
+    
+    displayPosts();
+}
+
+function savePosts() {
+    localStorage.setItem('social_posts', JSON.stringify(posts));
+    localStorage.setItem('social_comments', JSON.stringify(comments));
+}
+
+function displayPosts() {
+    const container = document.getElementById('feedContainer');
+    
+    if (!posts || posts.length === 0) {
+        container.innerHTML = `
+            <div class="feed-placeholder">
+                <p>📝 No posts yet</p>
+                <p>Be the first to share something!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = posts.map(post => `
+        <div class="feed-post" onclick="trackView(${post.id})">
+            <div class="post-header">
+                <div class="post-author-info">
+                    <span class="post-avatar">${post.author.charAt(0).toUpperCase()}</span>
+                    <div>
+                        <div class="post-author">${post.author}</div>
+                        <div class="post-time">${post.timestamp}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="post-content">${post.content}</div>
+            <div class="post-stats">
+                <span>❤️ ${post.likes || 0}</span>
+                <span>💬 ${post.comments_count || 0}</span>
+                <span>👁️ ${post.views || 0}</span>
+            </div>
+            <div class="post-actions">
+                <button onclick="event.stopPropagation();likePost(${post.id})" class="action-btn ${post.liked ? 'liked' : ''}">
+                    ❤️ Like
+                </button>
+                <button onclick="event.stopPropagation();openCommentModal(${post.id})" class="action-btn">
+                    💬 Comment
+                </button>
+                <button onclick="event.stopPropagation();sharePost(${post.id})" class="action-btn">
+                    🔗 Share
+                </button>
+                <button onclick="event.stopPropagation();openMessageModalFromPost(${post.id})" class="action-btn">
+                    💬 Message
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    savePosts();
+    updateEarningsDisplay();
+}
+
+function trackView(postId) {
+    const post = posts.find(p => p.id === postId);
+    if (post && post.author !== currentUser) {
+        post.views = (post.views || 0) + 1;
+        if (post.views % 5 === 0) {
+            addEarnings('contentViews', 0.20);
+        }
+        savePosts();
+    }
+}
+
+function likePost(postId) {
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+        if (post.liked) {
+            post.likes = (post.likes || 1) - 1;
+            post.liked = false;
+        } else {
+            post.likes = (post.likes || 0) + 1;
+            post.liked = true;
+            if (post.author !== currentUser) {
+                addEarnings('likes', 0.10);
+                addNotification(`❤️ You liked ${post.author}'s post! +KSH 0.10`);
+            }
+        }
+        displayPosts();
+        savePosts();
+    }
+}
+
+function sharePost(postId) {
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+        const text = `📢 ${post.author}: "${post.content.substring(0, 50)}..."`;
+        if (navigator.share) {
+            navigator.share({ title: 'Post', text: text }).catch(() => {});
+        } else {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('📋 Copied to clipboard!');
+            }).catch(() => {
+                alert('Share: ' + text);
+            });
+        }
+        if (post.author !== currentUser) {
+            addEarnings('shares', 0.30);
+            addNotification(`🔗 You shared ${post.author}'s post! +KSH 0.30`);
+        }
+        showToast('🔗 Post shared!');
+    }
+}
+
+function openCommentModal(postId) {
+    currentPostId = postId;
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    
+    document.getElementById('commentModal').style.display = 'block';
+    document.getElementById('commentInput').value = '';
+    
+    const commentList = document.getElementById('commentList');
+    const postComments = comments[postId] || [];
+    
+    if (postComments.length === 0) {
+        commentList.innerHTML = `
+            <div class="comment-placeholder">
+                <p>No comments yet. Be the first!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    commentList.innerHTML = postComments.map(comment => `
+        <div class="comment-item">
+            <div class="comment-author">
+                <span class="comment-avatar">${comment.author.charAt(0).toUpperCase()}</span>
+                <span class="comment-name">${comment.author}</span>
+                <span class="comment-time">${comment.time}</span>
+            </div>
+            <div class="comment-text">${comment.text}</div>
+        </div>
+    `).join('');
+}
+
+function submitComment() {
+    const input = document.getElementById('commentInput');
+    const text = input.value.trim();
+    
+    if (!text || !currentPostId) {
+        showToast('❌ Please write a comment!');
+        return;
+    }
+    
+    if (!comments[currentPostId]) {
+        comments[currentPostId] = [];
+    }
+    
+    comments[currentPostId].push({
+        author: currentUser,
+        text: text,
+        time: new Date().toLocaleString()
+    });
+    
+    const post = posts.find(p => p.id === currentPostId);
+    if (post) {
+        post.comments_count = (post.comments_count || 0) + 1;
+        if (post.author !== currentUser) {
+            addEarnings('replies', 0.15);
+            addNotification(`💬 You commented on ${post.author}'s post! +KSH 0.15`);
+        }
+    }
+    
+    input.value = '';
+    openCommentModal(currentPostId);
+    displayPosts();
+    savePosts();
+    showToast('💬 Comment added!');
+}
+
+function handleCommentKey(event) {
+    if (event.key === 'Enter') {
+        submitComment();
+    }
+}
+
+function closeCommentModal() {
+    document.getElementById('commentModal').style.display = 'none';
+}
+
+function openMessageModal(memberId) {
+    const member = allMembers.find(m => m.id === memberId);
+    if (!member) return;
+    
+    selectedMember = member;
+    document.getElementById('messageModalTitle').textContent = `💬 Message ${member.full_name}`;
+    document.getElementById('messageModal').style.display = 'block';
+    document.getElementById('messageInput').value = '';
+    
+    addEarnings('views', 0.05);
+    loadMessages(memberId);
+}
+
+function openMessageModalFromPost(postId) {
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    
+    const member = allMembers.find(m => m.username === post.author);
+    if (member) {
+        openMessageModal(member.id);
+    } else {
+        showToast('❌ User not found');
+    }
+}
+
+function loadMessages(memberId) {
+    const messageList = document.getElementById('messageList');
+    const key = [Math.min(currentUser, selectedMember.username), Math.max(currentUser, selectedMember.username)].join('_');
+    
+    if (!messages[key]) {
+        messages[key] = [];
+    }
+    
+    if (messages[key].length === 0) {
+        messageList.innerHTML = `
+            <div class="message-placeholder">
+                <p>No messages yet. Say hello!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    messageList.innerHTML = messages[key].map(msg => `
+        <div class="message-item ${msg.sender === currentUser ? 'sent' : 'received'}">
+            <div class="message-bubble">
+                <span class="message-sender">${msg.sender === currentUser ? 'You' : selectedMember.full_name}</span>
+                <p>${msg.text}</p>
+                <span class="message-time">${msg.time}</span>
+            </div>
+        </div>
+    `).join('');
+    
+    messageList.scrollTop = messageList.scrollHeight;
+}
+
+function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const text = input.value.trim();
+    
+    if (!text || !selectedMember) {
+        showToast('❌ Write a message!');
+        return;
+    }
+    
+    const key = [Math.min(currentUser, selectedMember.username), Math.max(currentUser, selectedMember.username)].join('_');
+    
+    if (!messages[key]) {
+        messages[key] = [];
+    }
+    
+    messages[key].push({
+        sender: currentUser,
+        text: text,
+        time: new Date().toLocaleTimeString()
+    });
+    
+    addEarnings('replies', 0.10);
+    
+    setTimeout(() => {
+        const replies = ['Hey! 👋', 'Great!', 'Thanks!', 'Interesting!', 'Awesome!', '😊', 'I agree!', 'Let\'s chat!'];
+        const reply = replies[Math.floor(Math.random() * replies.length)];
+        messages[key].push({
+            sender: selectedMember.username,
+            text: reply,
+            time: new Date().toLocaleTimeString()
+        });
+        addEarnings('replies', 0.15);
+        addNotification(`💬 ${selectedMember.full_name} replied to you! +KSH 0.15`);
+        loadMessages(selectedMember.id);
+        localStorage.setItem('social_messages', JSON.stringify(messages));
+        updateEarningsDisplay();
+    }, 1500);
+    
+    input.value = '';
+    loadMessages(selectedMember.id);
+    localStorage.setItem('social_messages', JSON.stringify(messages));
+    showToast('✅ Message sent!');
+    updateEarningsDisplay();
+}
+
+function handleMessageKey(event) {
+    if (event.key === 'Enter') {
+        sendMessage();
+    }
+}
+
+function closeMessageModal() {
+    document.getElementById('messageModal').style.display = 'none';
+}
+
+function loadMessagesFromStorage() {
+    const saved = localStorage.getItem('social_messages');
+    if (saved) {
+        try {
+            messages = JSON.parse(saved);
+        } catch (e) {
+            messages = {};
+        }
+    }
+}
+
+function loadEarnings() {
+    const saved = localStorage.getItem('user_earnings');
+    if (saved) {
+        try {
+            earnings = JSON.parse(saved);
+        } catch (e) {
+            earnings = { replies: 0, views: 0, likes: 0, contentViews: 0, shares: 0 };
+        }
+    }
+    updateEarningsDisplay();
+}
+
+function addEarnings(type, amount) {
+    if (earnings[type] !== undefined) {
+        earnings[type] += amount;
+        localStorage.setItem('user_earnings', JSON.stringify(earnings));
+        updateEarningsDisplay();
+        updateBadge();
+    }
+}
+
+function updateEarningsDisplay() {
+    const total = Object.values(earnings).reduce((a, b) => a + b, 0);
+    document.getElementById('replyEarnings').textContent = `KSH ${earnings.replies.toFixed(2)}`;
+    document.getElementById('viewEarnings').textContent = `KSH ${earnings.views.toFixed(2)}`;
+    document.getElementById('likeEarnings').textContent = `KSH ${earnings.likes.toFixed(2)}`;
+    document.getElementById('contentEarnings').textContent = `KSH ${earnings.contentViews.toFixed(2)}`;
+    document.getElementById('shareEarnings').textContent = `KSH ${earnings.shares.toFixed(2)}`;
+    document.getElementById('totalEarnings').textContent = `KSH ${total.toFixed(2)}`;
+    document.getElementById('earningsBadge').textContent = `+KSH ${total.toFixed(2)}`;
+    
+    if (document.getElementById('profileModal').style.display === 'block') {
+        document.getElementById('profileEarnings').textContent = `KSH ${total.toFixed(2)}`;
+    }
+}
+
+function updateBadge() {
+    const total = Object.values(earnings).reduce((a, b) => a + b, 0);
+    document.getElementById('earningsBadge').textContent = `+KSH ${total.toFixed(2)}`;
+}
+
+function startEarningSimulation() {
+    setInterval(() => {
+        const types = ['views', 'contentViews'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const amount = (Math.random() * 0.30) + 0.05;
+        addEarnings(type, amount);
+        if (Math.random() > 0.6) {
+            addNotification(`💰 Earned KSH ${amount.toFixed(2)} from ${type === 'views' ? 'profile views' : 'content views'}`);
+        }
+    }, 30000 + Math.random() * 30000);
+    
+    setInterval(() => {
+        if (Math.random() > 0.7) {
+            const amount = (Math.random() * 0.20) + 0.05;
+            addEarnings('likes', amount);
+            addNotification(`❤️ Earned KSH ${amount.toFixed(2)} from likes!`);
+        }
+    }, 45000 + Math.random() * 45000);
+}
+
+function showEarningsModal() {
+    document.getElementById('earningsModal').style.display = 'block';
+    updateEarningsDisplay();
+}
+
+function closeEarningsModal() {
+    document.getElementById('earningsModal').style.display = 'none';
+}
+
+function showNotifications() {
+    if (notifications.length === 0) {
+        showToast('🔔 No new notifications');
+        return;
+    }
+    alert('🔔 Notifications:\n\n' + notifications.join('\n'));
+    notifCount = 0;
+    document.getElementById('notifBadge').textContent = '0';
+    notifications = [];
+}
+
+function addNotification(message) {
+    notifications.push(message);
+    notifCount++;
+    document.getElementById('notifBadge').textContent = notifCount;
+}
+
+function showPostModal() {
+    document.getElementById('postContentInput').focus();
+    document.getElementById('postContentInput').scrollIntoView({ behavior: 'smooth' });
+}
+
+function updateOnlineCount() {
+    setInterval(() => {
+        if (allMembers.length > 0) {
+            const online = Math.floor(Math.random() * Math.min(allMembers.length, 15)) + 1;
+            document.getElementById('onlineCount').textContent = `🟢 ${online} online`;
+        }
+    }, 30000);
+}
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastText').textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+function scrollToFeed() {
+    document.querySelector('.feed-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function scrollToMembers() {
+    document.querySelector('.members-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function showProfileModal() {
+    document.getElementById('profileModal').style.display = 'block';
+    updateProfileDisplay();
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').style.display = 'none';
+}
+
+function updateProfileDisplay() {
+    const userId = localStorage.getItem('userId');
+    const username = localStorage.getItem('username');
+    
+    document.getElementById('profileUsername').textContent = username || 'Unknown';
+    document.getElementById('profileAvatarLetter').textContent = username ? username.charAt(0).toUpperCase() : '👤';
+    
+    fetch(`/api/members/${userId}`)
+        .then(res => res.json())
+        .then(user => {
+            if (user) {
+                document.getElementById('profileName').textContent = user.full_name || 'Not set';
+                document.getElementById('profileEmail').textContent = user.email || 'Not set';
+                document.getElementById('profilePhone').textContent = user.phone || 'Not set';
+                document.getElementById('profileJoined').textContent = user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Not set';
+                
+                const status = user.is_paid ? '✅ Active Member' : '⏳ Pending Payment';
+                document.getElementById('profileStatus').textContent = status;
+                document.getElementById('profileStatus').style.color = user.is_paid ? '#2ecc71' : '#e74c3c';
+            }
+        })
+        .catch(err => console.error('Error loading profile:', err));
+    
+    const total = Object.values(earnings).reduce((a, b) => a + b, 0);
+    document.getElementById('profileEarnings').textContent = `KSH ${total.toFixed(2)}`;
+}
+
+function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('isPaid');
+        localStorage.removeItem('username');
+        window.location.href = 'login.html';
+    }
+}
+
+window.onclick = function(event) {
+    const commentModal = document.getElementById('commentModal');
+    const messageModal = document.getElementById('messageModal');
+    const earningsModal = document.getElementById('earningsModal');
+    const profileModal = document.getElementById('profileModal');
+    
+    if (event.target === commentModal) {
+        closeCommentModal();
+    }
+    if (event.target === messageModal) {
+        closeMessageModal();
+    }
+    if (event.target === earningsModal) {
+        closeEarningsModal();
+    }
+    if (event.target === profileModal) {
+        closeProfileModal();
+    }
+}
+
+loadMessagesFromStorage();
+console.log('✅ Dashboard fully loaded!');

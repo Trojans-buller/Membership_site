@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Community Dashboard</title>
+    <link rel="stylesheet" href="css/style.css?v=6">
+    <style>
+        /* ===== Dashboard-specific styles ===== */
+        .dashboard-container {
+            max-width: 1200px !important;
+            padding: 20px 20px 80px 20px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e8f5ef;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-small { font-size: 32px; }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .online-count {
+            font-size: 14px;
+            color: #2d6b5a;
+            background: #f0faf5;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        .dashboard-main {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+
+        .members-section {
+            background: #f8fffa;
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid #e8f5ef;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .section-header h3 {
+            color: #1a7a5a;
+            font-size: 16px;
+        }
+        #searchMembers {
+            padding: 8px 12px;
+            border: 2px solid #d4ece0;
+            border-radius: 8px;
+            font-size: 13px;
+            flex: 1;
+            min-width: 120px;
+        }
+        #searchMembers:focus {
+            outline: none;
+            border-color: #11998e;
+        }
+        .members-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .member-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            border-bottom: 1px solid #f0faf5;
+            gap: 10px;
+        }
+        .member-item:hover { background: #f0faf5; }
+        .member-avatar { position: relative; flex-shrink: 0; }
+        .avatar-letter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #11998e 0%, #2ecc71 100%);
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
+            border-radius: 50%;
+        }
+        .status-dot {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .status-dot.online { background: #2ecc71; }
+        .status-dot.offline { background: #95a5a6; }
+        .member-info { flex: 1; }
+        .member-name { font-weight: 600; color: #1a3a2e; font-size: 14px; }
+        .member-username { font-size: 12px; color: #6b9b8a; }
+        .member-actions { flex-shrink: 0; }
+        .message-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .message-btn:hover {
+            background: #e8f5ef;
+            transform: scale(1.1);
+        }
+
+        .feed-section {
+            background: #f8fffa;
+            border-radius: 12px;
+            border: 1px solid #e8f5ef;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        .feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e8f5ef;
+            background: #f0faf5;
+            border-radius: 12px 12px 0 0;
+            flex-shrink: 0;
+        }
+        .feed-header h3 { color: #1a7a5a; font-size: 16px; }
+        .create-post-btn {
+            background: linear-gradient(135deg, #11998e 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            width: auto;
+        }
+        .create-post-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(17,153,142,0.3);
+        }
+        .create-post-form {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e8f5ef;
+            flex-shrink: 0;
+            background: white;
+        }
+        .create-post-form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #d4ece0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        .create-post-form textarea:focus {
+            outline: none;
+            border-color: #11998e;
+        }
+        .post-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+        .post-submit-btn {
+            background: linear-gradient(135deg, #11998e 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            width: auto;
+        }
+        .post-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(17,153,142,0.3);
+        }
+        .feed-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .feed-placeholder {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b9b8a;
+        }
+        .feed-post {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #e8f5ef;
+        }
+        .feed-post:hover {
+            border-color: #c8e6d9;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .post-author-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .post-avatar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #11998e 0%, #2ecc71 100%);
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            border-radius: 50%;
+        }
+        .post-author { font-weight: 600; color: #1a7a5a; font-size: 14px; }
+        .post-time { font-size: 12px; color: #6b9b8a; }
+        .post-content { color: #1a3a2e; font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
+        .post-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: #6b9b8a;
+            padding: 8px 0;
+            border-top: 1px solid #f0faf5;
+            border-bottom: 1px solid #f0faf5;
+            margin-bottom: 10px;
+        }
+        .post-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            color: #6b9b8a;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+        .action-btn:hover {
+            background: #f0faf5;
+            color: #11998e;
+        }
+        .action-btn.liked { color: #e74c3c; }
+
+        /* Bottom Navbar - fixed */
+        .bottom-navbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 2px solid #e8f5ef;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0;
+            z-index: 100;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+            max-width: 1200px;
+            margin: 0 auto;
+            border-radius: 16px 16px 0 0;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4px 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            border-radius: 8px;
+            min-width: 60px;
+        }
+        .nav-item:hover {
+            background: #f0faf5;
+            transform: translateY(-2px);
+        }
+        .nav-icon { font-size: 22px; }
+        .nav-label {
+            font-size: 10px;
+            color: #6b9b8a;
+            margin-top: 2px;
+            font-weight: 500;
+        }
+        .nav-badge {
+            position: absolute;
+            top: -4px;
+            right: 4px;
+            background: #11998e;
+            color: white;
+            border-radius: 20px;
+            padding: 1px 6px;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            border-left: 4px solid #11998e;
+            z-index: 999;
+        }
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toast-icon { font-size: 20px; }
+        .toast-text { color: #1a3a2e; font-size: 14px; font-weight: 500; }
+
+        /* Modals (dashboard specific) */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            animation: slideUp 0.3s ease;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .modal-header h3 { color: #1a7a5a; }
+        .close-btn {
+            font-size: 28px;
+            font-weight: 700;
+            color: #999;
+            cursor: pointer;
+        }
+        .close-btn:hover { color: #333; }
+
+        /* Profile modal */
+        .profile-avatar-large {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .profile-avatar-large span {
+            font-size: 80px;
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #f0faf5 0%, #e0f5ed 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 4px solid #11998e;
+        }
+        .profile-details {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .profile-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8fffa;
+            border-radius: 8px;
+            border-left: 3px solid #11998e;
+        }
+        .profile-row.total-earnings {
+            background: linear-gradient(135deg, #f0faf5 0%, #e0f5ed 100%);
+            border-left-color: #f39c12;
+            font-weight: 700;
+        }
+        .profile-label { color: #2d6b5a; font-size: 13px; font-weight: 600; }
+        .profile-value { color: #1a3a2e; font-size: 14px; font-weight: 500; }
+        .profile-row.total-earnings .profile-value { color: #11998e; font-size: 18px; }
+
+        /* Earnings modal */
+        .earnings-stats { padding: 10px 0; }
+        .earning-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            border-bottom: 1px solid #f0faf5;
+        }
+        .earning-item:hover { background: #f8fffa; }
+        .earning-item.total {
+            background: linear-gradient(135deg, #f0faf5 0%, #e0f5ed 100%);
+            border-radius: 8px;
+            margin-top: 10px;
+            border-bottom: none;
+            font-weight: 700;
+        }
+        .earning-icon { font-size: 28px; width: 45px; text-align: center; }
+        .earning-info {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .earning-label { color: #1a3a2e; font-size: 14px; }
+        .earning-value { color: #11998e; font-weight: 600; font-size: 16px; }
+        .earning-item.total .earning-value { color: #0d7a72; font-size: 20px; }
+
+        /* Comment & Message modals */
+        .comment-list, .message-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        .comment-item {
+            padding: 10px;
+            border-bottom: 1px solid #f0faf5;
+        }
+        .comment-author {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .comment-avatar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #11998e 0%, #2ecc71 100%);
+            color: white;
+            font-weight: 700;
+            font-size: 12px;
+            border-radius: 50%;
+        }
+        .comment-name { font-weight: 600; color: #1a7a5a; font-size: 13px; }
+        .comment-time { font-size: 11px; color: #6b9b8a; }
+        .comment-text { color: #1a3a2e; font-size: 14px; padding-left: 36px; }
+        .comment-placeholder, .message-placeholder {
+            text-align: center;
+            padding: 30px;
+            color: #6b9b8a;
+        }
+        .comment-input-area, .message-input-area {
+            display: flex;
+            gap: 10px;
+            padding-top: 12px;
+            border-top: 1px solid #e8f5ef;
+        }
+        .comment-input-area input, .message-input-area input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 2px solid #d4ece0;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+        .comment-input-area input:focus, .message-input-area input:focus {
+            border-color: #11998e;
+        }
+        .comment-input-area button, .message-input-area button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #11998e 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            width: auto;
+        }
+        .comment-input-area button:hover, .message-input-area button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(17,153,142,0.3);
+        }
+
+        /* Message bubbles */
+        .message-item { margin-bottom: 10px; }
+        .message-item.sent { text-align: right; }
+        .message-item.received { text-align: left; }
+        .message-bubble {
+            display: inline-block;
+            max-width: 80%;
+            padding: 8px 14px;
+            border-radius: 12px;
+            text-align: left;
+        }
+        .message-item.sent .message-bubble {
+            background: linear-gradient(135deg, #11998e 0%, #2ecc71 100%);
+            color: white;
+        }
+        .message-item.received .message-bubble {
+            background: #e8f5ef;
+            color: #1a3a2e;
+        }
+        .message-sender {
+            font-size: 11px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .message-bubble p { margin: 0; font-size: 14px; word-wrap: break-word; }
+        .message-time { font-size: 10px; opacity: 0.6; display: block; margin-top: 2px; }
+
+        /* Responsive dashboard */
+        @media (max-width: 768px) {
+            .dashboard-main {
+                grid-template-columns: 1fr;
+            }
+            .members-section {
+                height: 250px;
+            }
+            .feed-section {
+                height: 500px;
+            }
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .bottom-navbar {
+                padding: 6px 0;
+            }
+            .nav-item {
+                padding: 2px 8px;
+                min-width: 45px;
+            }
+            .nav-icon { font-size: 18px; }
+            .nav-label { font-size: 8px; }
+        }
+
+        @media (max-width: 480px) {
+            .member-item { padding: 8px; }
+            .avatar-letter { width: 32px; height: 32px; font-size: 14px; }
+            .post-actions { flex-wrap: wrap; }
+            .action-btn { font-size: 12px; padding: 4px 10px; }
+            .profile-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container dashboard-container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-left">
+                <div class="logo-small">📱</div>
+                <h2>Social Hub</h2>
+            </div>
+            <div class="header-right">
+                <span class="online-count" id="onlineCount">🟢 0 online</span>
+                <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="dashboard-main">
+            <!-- Left Sidebar - Members -->
+            <div class="members-section">
+                <div class="section-header">
+                    <h3>👥 Members</h3>
+                    <input type="text" id="searchMembers" placeholder="🔍 Search..." onkeyup="searchMembers()">
+                </div>
+                <div class="members-list" id="membersList">
+                    <div class="loading-spinner">Loading members...</div>
+                </div>
+            </div>
+
+            <!-- Center - Feed -->
+            <div class="feed-section">
+                <div class="feed-header">
+                    <h3>📱 Feed</h3>
+                    <button onclick="showPostModal()" class="create-post-btn">+ New Post</button>
+                </div>
+                
+                <!-- Create Post Form -->
+                <div class="create-post-form" id="createPostForm">
+                    <textarea id="postContentInput" placeholder="What's on your mind?" rows="2"></textarea>
+                    <div class="post-form-actions">
+                        <button onclick="submitPost()" class="post-submit-btn">Post</button>
+                    </div>
+                </div>
+
+                <!-- Feed Container -->
+                <div class="feed-container" id="feedContainer">
+                    <div class="feed-placeholder">Loading posts...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navbar -->
+        <div class="bottom-navbar">
+            <div class="nav-item" onclick="scrollToFeed()">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Feed</span>
+            </div>
+            <div class="nav-item" onclick="scrollToMembers()">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">Members</span>
+            </div>
+            <div class="nav-item" onclick="showEarningsModal()">
+                <span class="nav-icon">💰</span>
+                <span class="nav-label">Earnings</span>
+                <span class="nav-badge" id="earningsBadge">+KSH 0</span>
+            </div>
+            <div class="nav-item" onclick="showNotifications()">
+                <span class="nav-icon">🔔</span>
+                <span class="nav-label">Alerts</span>
+                <span class="nav-badge" id="notifBadge">0</span>
+            </div>
+            <div class="nav-item" onclick="showProfileModal()">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Profile</span>
+            </div>
+        </div>
+
+        <!-- Profile Modal -->
+        <div id="profileModal" class="modal" style="display:none;">
+            <div class="modal-content profile-modal">
+                <div class="modal-header">
+                    <h3>👤 My Profile</h3>
+                    <span class="close-btn" onclick="closeProfileModal()">&times;</span>
+                </div>
+                <div class="profile-card">
+                    <div class="profile-avatar-large">
+                        <span id="profileAvatarLetter">👤</span>
+                    </div>
+                    <div class="profile-details">
+                        <div class="profile-row">
+                            <span class="profile-label">Username</span>
+                            <span class="profile-value" id="profileUsername">Loading...</span>
+                        </div>
+                        <div class="profile-row">
+                            <span class="profile-label">Full Name</span>
+                            <span class="profile-value" id="profileName">Loading...</span>
+                        </div>
+                        <div class="profile-row">
+                            <span class="profile-label">Email</span>
+                            <span class="profile-value" id="profileEmail">Loading...</span>
+                        </div>
+                        <div class="profile-row">
+                            <span class="profile-label">Phone</span>
+                            <span class="profile-value" id="profilePhone">Loading...</span>
+                        </div>
+                        <div class="profile-row">
+                            <span class="profile-label">Status</span>
+                            <span class="profile-value" id="profileStatus">Loading...</span>
+                        </div>
+                        <div class="profile-row">
+                            <span class="profile-label">Member Since</span>
+                            <span class="profile-value" id="profileJoined">Loading...</span>
+                        </div>
+                        <div class="profile-row total-earnings">
+                            <span class="profile-label">💰 Total Earnings</span>
+                            <span class="profile-value" id="profileEarnings">KSH 0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Earnings Modal -->
+        <div id="earningsModal" class="modal" style="display:none;">
+            <div class="modal-content earnings-modal">
+                <div class="modal-header">
+                    <h3>💰 Earnings Dashboard</h3>
+                    <span class="close-btn" onclick="closeEarningsModal()">&times;</span>
+                </div>
+                <div class="earnings-stats">
+                    <div class="earning-item">
+                        <span class="earning-icon">💬</span>
+                        <div class="earning-info">
+                            <span class="earning-label">Message Replies</span>
+                            <span class="earning-value" id="replyEarnings">KSH 0.00</span>
+                        </div>
+                    </div>
+                    <div class="earning-item">
+                        <span class="earning-icon">👁️</span>
+                        <div class="earning-info">
+                            <span class="earning-label">Profile Views</span>
+                            <span class="earning-value" id="viewEarnings">KSH 0.00</span>
+                        </div>
+                    </div>
+                    <div class="earning-item">
+                        <span class="earning-icon">❤️</span>
+                        <div class="earning-info">
+                            <span class="earning-label">Likes Received</span>
+                            <span class="earning-value" id="likeEarnings">KSH 0.00</span>
+                        </div>
+                    </div>
+                    <div class="earning-item">
+                        <span class="earning-icon">📷</span>
+                        <div class="earning-info">
+                            <span class="earning-label">Content Views</span>
+                            <span class="earning-value" id="contentEarnings">KSH 0.00</span>
+                        </div>
+                    </div>
+                    <div class="earning-item">
+                        <span class="earning-icon">🔗</span>
+                        <div class="earning-info">
+                            <span class="earning-label">Shares</span>
+                            <span class="earning-value" id="shareEarnings">KSH 0.00</span>
+                        </div>
+                    </div>
+                    <div class="earning-item total">
+                        <span class="earning-icon">💰</span>
+                        <div class="earning-info">
+                            <span class="earning-label">Total Earnings</span>
+                            <span class="earning-value" id="totalEarnings">KSH 0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comment Modal -->
+        <div id="commentModal" class="modal" style="display:none;">
+            <div class="modal-content comment-modal">
+                <div class="modal-header">
+                    <h3>💬 Comments</h3>
+                    <span class="close-btn" onclick="closeCommentModal()">&times;</span>
+                </div>
+                <div class="comment-list" id="commentList"></div>
+                <div class="comment-input-area">
+                    <input type="text" id="commentInput" placeholder="Write a comment..." onkeypress="handleCommentKey(event)">
+                    <button onclick="submitComment()">Comment</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Modal -->
+        <div id="messageModal" class="modal" style="display:none;">
+            <div class="modal-content message-modal">
+                <div class="modal-header">
+                    <h3 id="messageModalTitle">💬 Send Message</h3>
+                    <span class="close-btn" onclick="closeMessageModal()">&times;</span>
+                </div>
+                <div class="message-list" id="messageList"></div>
+                <div class="message-input-area">
+                    <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="handleMessageKey(event)">
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div id="toast" class="toast" style="display:none;">
+            <div class="toast-content">
+                <span class="toast-icon" id="toastIcon">✅</span>
+                <span class="toast-text" id="toastText">Success!</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

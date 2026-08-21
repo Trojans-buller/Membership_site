@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+    <div class="container admin-container">
+        <!-- Login Form -->
+        <div id="adminLoginForm">
+            <div class="logo">👑</div>
+            <h2>Admin Login</h2>
+            <form id="adminLogin">
+                <div class="form-group">
+                    <label for="adminUsername">Username</label>
+                    <input type="text" id="adminUsername" placeholder="Enter admin username" required>
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">Password</label>
+                    <input type="password" id="adminPassword" placeholder="Enter password" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+            <div id="adminLoginMessage"></div>
+        </div>
+        
+        <!-- Admin Panel -->
+        <div id="adminPanel" style="display:none;">
+            <div class="admin-header">
+                <h2>👑 Admin Dashboard</h2>
+                <button class="logout-btn" onclick="adminLogout()">Logout</button>
+            </div>
+            
+            <!-- Stats -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <h4>Total Members</h4>
+                    <p id="totalUsers">0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Paid Members</h4>
+                    <p id="paidUsers">0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Revenue</h4>
+                    <p id="totalRevenue">KSH 0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Unpaid</h4>
+                    <p id="unpaidUsers">0</p>
+                </div>
+            </div>
+            
+            <!-- Members Table -->
+            <div class="table-container">
+                <div class="table-header">
+                    <h3>All Members</h3>
+                    <button onclick="exportCSV()" class="export-btn">📥 Export CSV</button>
+                </div>
+                <div class="table-wrapper">
+                    <table id="membersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Username</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersBody">
+                            <tr><td colspan="7">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/admin.js"></script>
+</body>
+</html>

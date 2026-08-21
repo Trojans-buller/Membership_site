@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Payment - Unlock Dashboard</title>
+    <link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+    <div class="container">
+        <div class="logo">💰</div>
+        <h2>Unlock Your Dashboard</h2>
+        <p class="subtitle">Pay 100 KSH to access all features</p>
+        
+        <div class="payment-info">
+            <div class="info-item">
+                <span>Amount</span>
+                <span class="amount">KSH 100</span>
+            </div>
+            <div class="info-item">
+                <span>Payment Method</span>
+                <span>M-Pesa STK Push</span>
+            </div>
+        </div>
+        
+        <form id="paymentForm">
+            <div class="form-group">
+                <label for="phoneNumber">M-Pesa Phone Number</label>
+                <input type="tel" id="phoneNumber" placeholder="0712345678" required>
+                <small>You'll receive a prompt on your phone</small>
+            </div>
+            
+            <button type="submit" id="payBtn">
+                <span class="btn-text">💳 Pay 100 KSH</span>
+                <span class="btn-loader">⏳ Processing...</span>
+            </button>
+        </form>
+        
+        <div id="paymentStatus"></div>
+        <button id="checkDashboard" style="display:none;" onclick="window.location.href='dashboard.html'">
+            🚀 Go to Dashboard
+        </button>
+        
+        <div class="back-link">
+            <a href="#" onclick="window.location.href='register.html'">← Back to Registration</a>
+        </div>
+    </div>
+    
+    <script src="js/payment.js"></script>
+</body>
+</html>
