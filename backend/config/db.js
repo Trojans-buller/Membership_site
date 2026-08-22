@@ -15,10 +15,11 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-// Test connection
+// Test connection on startup
 pool.getConnection((err, connection) => {
     if (err) {
         console.error('❌ Database connection failed:', err.message);
+        console.error('Check your DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, and DB_PORT');
     } else {
         console.log('✅ Database connected successfully');
         connection.release();
