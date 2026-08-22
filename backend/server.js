@@ -10,10 +10,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '../frontend')));
+// Serve static files from the frontend directory (one level up from backend)
+const frontendPath = path.join(__dirname, '..', 'frontend');
+console.log(`📁 Serving static files from: ${frontendPath}`);
 
-// Routes - WITH DEBUG LOGGING
+app.use(express.static(frontendPath));
+
+// Routes
 console.log('✅ Loading routes...');
 
 try {
@@ -41,9 +44,9 @@ app.get('/api/test', (req, res) => {
     res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
 });
 
-// Default route
+// Default route - serve register.html
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/register.html'));
+    res.sendFile(path.join(frontendPath, 'register.html'));
 });
 
 // 404 handler
@@ -59,6 +62,7 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${PORT}`);
+    console.log(`📁 Frontend path: ${frontendPath}`);
     console.log(`📝 Register: /register.html`);
     console.log(`🔐 Login: /login.html`);
     console.log(`💳 Payment: /payment.html`);
