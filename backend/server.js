@@ -13,13 +13,30 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/payment', require('./routes/payment'));
-app.use('/api/admin', require('./routes/admin'));
-app.use('/api/members', require('./routes/members'));
+// Routes - WITH DEBUG LOGGING
+console.log('✅ Loading routes...');
 
-// Test endpoint - MOVED BEFORE error handler
+try {
+    app.use('/api/auth', require('./routes/auth'));
+    console.log('✅ /api/auth loaded');
+} catch(e) { console.error('❌ auth error:', e.message); }
+
+try {
+    app.use('/api/payment', require('./routes/payment'));
+    console.log('✅ /api/payment loaded');
+} catch(e) { console.error('❌ payment error:', e.message); }
+
+try {
+    app.use('/api/admin', require('./routes/admin'));
+    console.log('✅ /api/admin loaded');
+} catch(e) { console.error('❌ admin error:', e.message); }
+
+try {
+    app.use('/api/members', require('./routes/members'));
+    console.log('✅ /api/members loaded');
+} catch(e) { console.error('❌ members error:', e.message); }
+
+// Test endpoint
 app.get('/api/test', (req, res) => {
     res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
 });
@@ -27,6 +44,11 @@ app.get('/api/test', (req, res) => {
 // Default route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/register.html'));
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found: ' + req.url });
 });
 
 // Error handler
