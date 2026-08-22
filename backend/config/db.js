@@ -1,6 +1,13 @@
 const mysql = require('mysql2');
 require('dotenv').config();
 
+console.log('🔍 DB Config:', {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT
+});
+
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -15,11 +22,11 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-// Test connection on startup
+// Test connection
 pool.getConnection((err, connection) => {
     if (err) {
         console.error('❌ Database connection failed:', err.message);
-        console.error('Check your DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, and DB_PORT');
+        console.error('Please check your environment variables in Railway');
     } else {
         console.log('✅ Database connected successfully');
         connection.release();

@@ -19,9 +19,9 @@ app.use('/api/payment', require('./routes/payment'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/members', require('./routes/members'));
 
-// Test endpoint
+// Test endpoint - MOVED BEFORE error handler
 app.get('/api/test', (req, res) => {
-    res.json({ message: 'API is working!' });
+    res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
 });
 
 // Default route
@@ -42,4 +42,5 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`💳 Payment: /payment.html`);
     console.log(`🎯 Dashboard: /dashboard.html`);
     console.log(`👑 Admin: /admin.html`);
+    console.log(`🧪 Test API: /api/test`);
 });
