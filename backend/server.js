@@ -10,43 +10,29 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from the frontend directory (one level up from backend)
+// CORRECT PATH: frontend is at the same level as backend
 const frontendPath = path.join(__dirname, '..', 'frontend');
-console.log(`📁 Serving static files from: ${frontendPath}`);
+console.log('📁 Frontend path:', frontendPath);
 
+// Serve static files
 app.use(express.static(frontendPath));
 
 // Routes
-console.log('✅ Loading routes...');
-
-try {
-    app.use('/api/auth', require('./routes/auth'));
-    console.log('✅ /api/auth loaded');
-} catch(e) { console.error('❌ auth error:', e.message); }
-
-try {
-    app.use('/api/payment', require('./routes/payment'));
-    console.log('✅ /api/payment loaded');
-} catch(e) { console.error('❌ payment error:', e.message); }
-
-try {
-    app.use('/api/admin', require('./routes/admin'));
-    console.log('✅ /api/admin loaded');
-} catch(e) { console.error('❌ admin error:', e.message); }
-
-try {
-    app.use('/api/members', require('./routes/members'));
-    console.log('✅ /api/members loaded');
-} catch(e) { console.error('❌ members error:', e.message); }
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/payment', require('./routes/payment'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/members', require('./routes/members'));
 
 // Test endpoint
 app.get('/api/test', (req, res) => {
     res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
 });
 
-// Default route - serve register.html
+// Default route
 app.get('/', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'register.html'));
+    const filePath = path.join(frontendPath, 'register.html');
+    console.log('📄 Serving:', filePath);
+    res.sendFile(filePath);
 });
 
 // 404 handler
@@ -68,5 +54,4 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`💳 Payment: /payment.html`);
     console.log(`🎯 Dashboard: /dashboard.html`);
     console.log(`👑 Admin: /admin.html`);
-    console.log(`🧪 Test API: /api/test`);
 });
