@@ -1,0 +1,10 @@
+.env
+.env.*
+backend/.env
+backend/.env.*
+backend/ca.pem
+node_modules/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
