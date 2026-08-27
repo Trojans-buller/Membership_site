@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container dashboard-container">
+        <div class="dashboard-header">
+            <div class="header-left"><span class="logo-small">📱</span><h2>Social Hub</h2></div>
+            <div class="header-right"><span id="onlineCount">🟢 0 online</span><button class="logout-btn" onclick="logout()">Logout</button></div>
+        </div>
+        <div class="dashboard-main">
+            <div class="members-section">
+                <div class="section-header"><h3>Members</h3><input type="text" id="searchMembers" placeholder="Search..." onkeyup="searchMembers()"></div>
+                <div class="members-list" id="membersList"><div>Loading members...</div></div>
+            </div>
+            <div class="feed-section">
+                <div class="feed-header"><h3>Feed</h3><button onclick="showPostModal()" class="create-post-btn">+ New Post</button></div>
+                <div class="create-post-form"><textarea id="postContentInput" placeholder="What's on your mind?" rows="2"></textarea><button onclick="submitPost()" class="post-submit-btn">Post</button></div>
+                <div class="feed-container" id="feedContainer"><div>Loading posts...</div></div>
+            </div>
+        </div>
+        <div class="bottom-navbar">
+            <div class="nav-item" onclick="scrollToFeed()"><span class="nav-icon">🏠</span><span class="nav-label">Feed</span></div>
+            <div class="nav-item" onclick="scrollToMembers()"><span class="nav-icon">👥</span><span class="nav-label">Members</span></div>
+            <div class="nav-item" onclick="showEarningsModal()"><span class="nav-icon">💰</span><span class="nav-label">Earnings</span><span id="earningsBadge">+KSH 0</span></div>
+            <div class="nav-item" onclick="showNotifications()"><span class="nav-icon">🔔</span><span class="nav-label">Alerts</span><span id="notifBadge">0</span></div>
+            <div class="nav-item" onclick="showProfileModal()"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></div>
+        </div>
+    </div>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

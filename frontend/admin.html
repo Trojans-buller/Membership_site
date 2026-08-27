@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container admin-container">
+        <div id="adminLoginForm">
+            <div class="logo">👑</div>
+            <h2>Admin Login</h2>
+            <form id="adminLogin">
+                <div class="form-group"><label>Username</label><input type="text" id="adminUsername" placeholder="Admin username" required></div>
+                <div class="form-group"><label>Password</label><input type="password" id="adminPassword" placeholder="Password" required></div>
+                <button type="submit">Login</button>
+            </form>
+            <div id="adminLoginMessage"></div>
+        </div>
+        <div id="adminPanel" style="display:none;">
+            <div class="admin-header"><h2>Admin Dashboard</h2><button class="logout-btn" onclick="adminLogout()">Logout</button></div>
+            <div class="stats-grid">
+                <div class="stat-card"><h4>Total Members</h4><p id="totalUsers">0</p></div>
+                <div class="stat-card"><h4>Paid Members</h4><p id="paidUsers">0</p></div>
+                <div class="stat-card"><h4>Revenue</h4><p id="totalRevenue">KSH 0</p></div>
+                <div class="stat-card"><h4>Unpaid</h4><p id="unpaidUsers">0</p></div>
+            </div>
+            <div class="table-container">
+                <div class="table-header"><h3>All Members</h3><button onclick="exportCSV()" class="export-btn">Export CSV</button></div>
+                <table id="membersTable"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Username</th><th>Phone</th><th>Status</th><th>Joined</th></tr></thead><tbody id="membersBody"><tr><td colspan="7">Loading...</td></tr></tbody></table>
+            </div>
+        </div>
+    </div>
+    <script src="js/admin.js"></script>
+</body>
+</html>

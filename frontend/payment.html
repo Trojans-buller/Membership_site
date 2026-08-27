@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="logo">💰</div>
+        <h2>Pay 100 KSH</h2>
+        <p class="subtitle">Pay to unlock your dashboard</p>
+        
+        <div class="payment-info">
+            <div class="info-item"><span>Amount</span><span class="amount">KSH 100</span></div>
+            <div class="info-item"><span>Method</span><span>M-Pesa</span></div>
+        </div>
+        
+        <form id="paymentForm">
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" id="phoneNumber" placeholder="0712345678" required>
+            </div>
+            <button type="submit" id="payBtn">💳 Pay 100 KSH</button>
+        </form>
+        <div id="paymentStatus"></div>
+        <button id="checkDashboard" style="display:none;" onclick="window.location.href='dashboard.html'">Go to Dashboard</button>
+        <div class="back-link"><a href="register.html">← Back</a></div>
+    </div>
+    <script src="js/payment.js"></script>
+</body>
+</html>
