@@ -3,7 +3,7 @@ const axios = require('axios');
 const PAYHERO_BASE_URL = 'https://backend.payhero.co.ke/api/v2';
 const PAYHERO_USERNAME = process.env.PAYHERO_USERNAME;
 const PAYHERO_PASSWORD = process.env.PAYHERO_PASSWORD;
-const PAYHERO_CHANNEL_ID = process.env.PAYHERO_CHANNEL_ID || '133'; // You need to find this
+const PAYHERO_CHANNEL_ID = process.env.PAYHERO_CHANNEL_ID || '12023';
 
 function getBasicAuth() {
     return Buffer.from(`${PAYHERO_USERNAME}:${PAYHERO_PASSWORD}`).toString('base64');

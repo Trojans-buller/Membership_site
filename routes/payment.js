@@ -27,11 +27,13 @@ router.post('/initiate', [
             return res.status(400).json({ success: false, message: 'User already paid' });
         }
 
-        // Format phone number
+        // Format phone number - remove leading 0 if present
         let formattedPhone = phoneNumber.replace(/\s/g, '');
         if (formattedPhone.startsWith('0')) {
-            formattedPhone = '254' + formattedPhone.substring(1);
-        } else if (!formattedPhone.startsWith('254')) {
+            formattedPhone = formattedPhone.substring(1);
+        }
+        // Add 254 if not present
+        if (!formattedPhone.startsWith('254')) {
             formattedPhone = '254' + formattedPhone;
         }
 
@@ -57,14 +59,14 @@ router.post('/initiate', [
             phone_number: phoneNumber,
             amount: 100.00,
             status: 'pending',
-            transaction_id: paymentResult.transactionId
+            transaction_id: paymentResult.reference || paymentResult.CheckoutRequestID
         });
         await payment.save();
 
         res.json({
             success: true,
             message: 'STK Push sent. Please check your phone to complete payment.',
-            transactionId: paymentResult.transactionId
+            transactionId: paymentResult.reference || paymentResult.CheckoutRequestID
         });
 
     } catch (error) {
@@ -97,7 +99,7 @@ router.post('/check-status', async (req, res) => {
         // Check with PayHero API
         const statusResult = await checkPaymentStatus(transactionId);
 
-        if (statusResult.status === 'completed') {
+        if (statusResult.status === 'completed' || statusResult.status === 'COMPLETED') {
             payment.status = 'completed';
             payment.payment_date = new Date();
             await payment.save();
@@ -108,7 +110,7 @@ router.post('/check-status', async (req, res) => {
             });
 
             return res.json({ success: true, status: 'completed' });
-        } else if (statusResult.status === 'failed') {
+        } else if (statusResult.status === 'failed' || statusResult.status === 'FAILED') {
             payment.status = 'failed';
             await payment.save();
             return res.json({ success: false, status: 'failed', message: 'Payment failed' });
