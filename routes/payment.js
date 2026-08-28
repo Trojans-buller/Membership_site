@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Payment = require('../models/Payment');
+const { initiateSTKPush, checkPaymentStatus } = require('../services/payhero');
 const { body, validationResult } = require('express-validator');
 
-// Initiate payment (simulated)
+// Initiate real M-Pesa payment
 router.post('/initiate', [
     body('userId').notEmpty(),
     body('phoneNumber').notEmpty()
@@ -26,49 +27,102 @@ router.post('/initiate', [
             return res.status(400).json({ success: false, message: 'User already paid' });
         }
 
-        // Simulate payment (90% success)
-        const paymentSuccess = Math.random() < 0.9;
+        // Format phone number
+        let formattedPhone = phoneNumber.replace(/\s/g, '');
+        if (formattedPhone.startsWith('0')) {
+            formattedPhone = '254' + formattedPhone.substring(1);
+        } else if (!formattedPhone.startsWith('254')) {
+            formattedPhone = '254' + formattedPhone;
+        }
 
-        const transactionId = paymentSuccess 
-            ? 'PAY-' + Date.now() + '-' + Math.floor(Math.random() * 1000)
-            : 'FAIL-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        const accountRef = `MEM-${userId}-${Date.now()}`;
 
+        console.log('💳 Initiating PayHero STK Push:', { phone: formattedPhone, amount: 100, ref: accountRef });
+
+        // Initiate STK Push via PayHero
+        const paymentResult = await initiateSTKPush(formattedPhone, 100, accountRef);
+
+        console.log('📋 PayHero Response:', paymentResult);
+
+        if (!paymentResult.success) {
+            return res.status(400).json({
+                success: false,
+                message: paymentResult.message || 'Payment initiation failed'
+            });
+        }
+
+        // Save payment record
         const payment = new Payment({
             user_id: user._id,
             phone_number: phoneNumber,
             amount: 100.00,
-            status: paymentSuccess ? 'completed' : 'failed',
-            transaction_id: transactionId,
-            payment_date: paymentSuccess ? new Date() : null
+            status: 'pending',
+            transaction_id: paymentResult.transactionId
         });
-
         await payment.save();
 
-        if (paymentSuccess) {
-            user.is_paid = true;
-            user.payment_date = new Date();
-            await user.save();
-
-            res.json({
-                success: true,
-                message: '✅ Payment successful! Dashboard unlocked.',
-                transactionId: transactionId,
-                is_paid: true
-            });
-        } else {
-            res.status(400).json({
-                success: false,
-                message: '❌ Payment failed. Please try again.'
-            });
-        }
+        res.json({
+            success: true,
+            message: 'STK Push sent. Please check your phone to complete payment.',
+            transactionId: paymentResult.transactionId
+        });
 
     } catch (error) {
         console.error('Payment error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Server error' });
+    }
+});
+
+// Check payment status (polling)
+router.post('/check-status', async (req, res) => {
+    try {
+        const { transactionId, userId } = req.body;
+
+        if (!transactionId) {
+            return res.status(400).json({ success: false, message: 'Transaction ID required' });
+        }
+
+        const payment = await Payment.findOne({ transaction_id: transactionId });
+        if (!payment) {
+            return res.status(404).json({ success: false, message: 'Transaction not found' });
+        }
+
+        if (payment.status === 'completed') {
+            return res.json({ success: true, status: 'completed' });
+        }
+        if (payment.status === 'failed') {
+            return res.json({ success: false, status: 'failed' });
+        }
+
+        // Check with PayHero API
+        const statusResult = await checkPaymentStatus(transactionId);
+
+        if (statusResult.status === 'completed') {
+            payment.status = 'completed';
+            payment.payment_date = new Date();
+            await payment.save();
+
+            await User.findByIdAndUpdate(payment.user_id, { 
+                is_paid: true, 
+                payment_date: new Date() 
+            });
+
+            return res.json({ success: true, status: 'completed' });
+        } else if (statusResult.status === 'failed') {
+            payment.status = 'failed';
+            await payment.save();
+            return res.json({ success: false, status: 'failed', message: 'Payment failed' });
+        } else {
+            return res.json({ success: false, status: 'pending' });
+        }
+
+    } catch (error) {
+        console.error('Status check error:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
-// Check payment status
+// Simple status check
 router.get('/status/:userId', async (req, res) => {
     try {
         const user = await User.findById(req.params.userId);
