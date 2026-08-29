@@ -27,13 +27,11 @@ router.post('/initiate', [
             return res.status(400).json({ success: false, message: 'User already paid' });
         }
 
-        // Format phone number - remove leading 0 if present
+        // Format phone number
         let formattedPhone = phoneNumber.replace(/\s/g, '');
         if (formattedPhone.startsWith('0')) {
-            formattedPhone = formattedPhone.substring(1);
-        }
-        // Add 254 if not present
-        if (!formattedPhone.startsWith('254')) {
+            formattedPhone = '254' + formattedPhone.substring(1);
+        } else if (!formattedPhone.startsWith('254')) {
             formattedPhone = '254' + formattedPhone;
         }
 
@@ -41,7 +39,6 @@ router.post('/initiate', [
 
         console.log('💳 Initiating PayHero STK Push:', { phone: formattedPhone, amount: 100, ref: accountRef });
 
-        // Initiate STK Push via PayHero
         const paymentResult = await initiateSTKPush(formattedPhone, 100, accountRef);
 
         console.log('📋 PayHero Response:', paymentResult);
@@ -53,7 +50,6 @@ router.post('/initiate', [
             });
         }
 
-        // Save payment record
         const payment = new Payment({
             user_id: user._id,
             phone_number: phoneNumber,
@@ -72,6 +68,51 @@ router.post('/initiate', [
     } catch (error) {
         console.error('Payment error:', error);
         res.status(500).json({ success: false, message: error.message || 'Server error' });
+    }
+});
+
+// PAYHERO CALLBACK ENDPOINT - The missing piece!
+router.post('/callback', async (req, res) => {
+    try {
+        console.log('📨 Payment callback received:', req.body);
+        
+        const { CheckoutRequestID, ResultCode, TransactionReceipt, MerchantRequestID } = req.body;
+        
+        // Find payment by transaction ID
+        const payment = await Payment.findOne({ 
+            transaction_id: CheckoutRequestID || MerchantRequestID 
+        });
+        
+        if (!payment) {
+            console.log('⚠️ Payment not found for ID:', CheckoutRequestID || MerchantRequestID);
+            return res.status(404).json({ success: false, message: 'Payment not found' });
+        }
+        
+        if (ResultCode === '0' || ResultCode === 0) {
+            // Payment successful
+            payment.status = 'completed';
+            payment.payment_date = new Date();
+            await payment.save();
+            
+            // Mark user as paid
+            await User.findByIdAndUpdate(payment.user_id, {
+                is_paid: true,
+                payment_date: new Date()
+            });
+            
+            console.log('✅ Payment confirmed for user:', payment.user_id);
+            console.log('📋 Transaction Receipt:', TransactionReceipt);
+        } else {
+            // Payment failed
+            payment.status = 'failed';
+            await payment.save();
+            console.log('❌ Payment failed for user:', payment.user_id);
+        }
+        
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Callback error:', error);
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
